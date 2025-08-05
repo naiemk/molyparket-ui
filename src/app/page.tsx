@@ -1,4 +1,4 @@
-import { Layout } from '@/components/bridge/layout'
+import { Layout } from '@/components/main/layout'
 
 export default function Home() {
   return (

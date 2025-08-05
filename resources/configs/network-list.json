@@ -78,5 +78,15 @@
     "icon": "https://ferrum.network/wp-content/uploads/2022/07/cropped-ferrum-favicon-1-32x32.png",
     "publicRpcUrl": "https://rpc.svcs.ferrumnetwork.io",
     "blockExplorerUrl": "https://explorer.ferrumnetwork.io"
+  },
+  {
+    "namespace": "evm",
+    "id": "11155111",
+    "rpcUrl": "https://eth-sepolia.g.alchemy.com/public",
+    "label": "Sepolia",
+    "token": "ETH",
+    "icon": "https://icons.llamao.fi/icons/chains/rsz_ethereum.jpg",
+    "publicRpcUrl": "https://eth-sepolia.g.alchemy.com/public",
+    "blockExplorerUrl": "https://sepolia.etherscan.io"
   }
 ]

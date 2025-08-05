@@ -37,10 +37,10 @@ export default function RootLayout({
             icon: "https://i.imgur.com/qPA5l86.png",
             description: "Moly Parket",
           })}
-          providersConfigUrl="https://raw.githubusercontent.com/naiemk/qp-bridge/refs/heads/main/resources/configs/network-list.json"
+          providersConfigUrl="https://raw.githubusercontent.com/DeepTrustNet/molyparket-ui/refs/heads/main/resources/configs/network-list.json"
           configUrlMaps={{
-            "TOKENS": "https://raw.githubusercontent.com/naiemk/qp-bridge/refs/heads/main/resources/configs/tokens.json",
-            "APP": "https://raw.githubusercontent.com/naiemk/qp-bridge/refs/heads/main/resources/configs/config.json"
+            "TOKENS": "https://raw.githubusercontent.com/DeepTrustNet/molyparket-ui/refs/heads/main/resources/configs/tokens.json",
+            "APP": "https://raw.githubusercontent.com/DeepTrustNet/molyparket-ui/refs/heads/main/resources/configs/config.json"
           }}
           onError={(error) => setError(error)}
           onConfigLoaded={(k, v) => {
