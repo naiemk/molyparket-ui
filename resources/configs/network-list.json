@@ -1,0 +1,82 @@
+[
+  {
+    "namespace": "evm",
+    "id": "1",
+    "rpcUrl": "https://eth.llamarpc.com",
+    "label": "Ethereum Mainnet",
+    "token": "ETH",
+    "icon": "https://icons.llamao.fi/icons/chains/rsz_ethereum.jpg",
+    "publicRpcUrl": "https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID",
+    "blockExplorerUrl": "https://etherscan.io"
+  },
+  {
+    "namespace": "evm",
+    "id": "8453",
+    "rpcUrl": "https://mainnet.base.org",
+    "label": "Base",
+    "token": "ETH",
+    "icon": "https://base.org/favicon.ico",
+    "publicRpcUrl": "https://mainnet.base.org",
+    "blockExplorerUrl": "https://basescan.org"
+  },
+  {
+    "namespace": "evm",
+    "id": "42161",
+    "rpcUrl": "https://arb1.arbitrum.io/rpc",
+    "label": "Arbitrum One",
+    "token": "ETH",
+    "icon": "https://arbitrum.io/favicon.ico",
+    "publicRpcUrl": "https://arb1.arbitrum.io/rpc",
+    "blockExplorerUrl": "https://arbiscan.io"
+  },
+  {
+    "namespace": "evm",
+    "id": "10",
+    "rpcUrl": "https://mainnet.optimism.io",
+    "label": "Optimism",
+    "token": "ETH",
+    "icon": "https://optimism.io/favicon.ico",
+    "publicRpcUrl": "https://mainnet.optimism.io",
+    "blockExplorerUrl": "https://optimistic.etherscan.io"
+  },
+  {
+    "namespace": "evm",
+    "id": "137",
+    "rpcUrl": "https://polygon-rpc.com",
+    "label": "Polygon",
+    "token": "MATIC",
+    "icon": "https://polygon.technology/favicon.ico",
+    "publicRpcUrl": "https://polygon-rpc.com",
+    "blockExplorerUrl": "https://polygonscan.com"
+  },
+  {
+    "namespace": "evm",
+    "id": "43114",
+    "rpcUrl": "https://api.avax.network/ext/bc/C/rpc",
+    "label": "Avalanche C-Chain",
+    "token": "AVAX",
+    "icon": "https://avax.network/favicon.ico",
+    "publicRpcUrl": "https://api.avax.network/ext/bc/C/rpc",
+    "blockExplorerUrl": "https://snowtrace.io"
+  },
+  {
+    "namespace": "evm",
+    "id": "56",
+    "rpcUrl": "https://bsc-dataseed.binance.org",
+    "label": "Binance Smart Chain",
+    "token": "BNB",
+    "icon": "https://www.bnbchain.org/favicon.ico",
+    "publicRpcUrl": "https://bsc-dataseed.binance.org",
+    "blockExplorerUrl": "https://bscscan.com"
+  },
+  {
+    "namespace": "evm",
+    "id": "26100",
+    "rpcUrl": "https://qpn.svcs.ferrumnetwork.io",
+    "label": "Ferrum Network",
+    "token": "FERRUM",
+    "icon": "https://ferrum.network/wp-content/uploads/2022/07/cropped-ferrum-favicon-1-32x32.png",
+    "publicRpcUrl": "https://rpc.svcs.ferrumnetwork.io",
+    "blockExplorerUrl": "https://explorer.ferrumnetwork.io"
+  }
+]
