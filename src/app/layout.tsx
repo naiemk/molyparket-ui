@@ -4,6 +4,7 @@ import "./globals.css";
 import { AppWrapper } from 'web3-react-ui';
 import React, { useState } from "react";
 import { GLOBAL_CONFIG } from "@/types/token";
+import { ThemeProvider } from "@/components/theme-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,10 +27,11 @@ export default function RootLayout({
   console.log(initialized, 'initialized')
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
         <AppWrapper
           onWeb3OnboardInit={() => setInitialized(true)}
           appMetadata={({
@@ -53,6 +55,7 @@ export default function RootLayout({
             {initialized ? children : <div>Initializing...</div>}
           </React.Fragment>
         </AppWrapper>
+        </ThemeProvider>
       </body>
     </html>
   );
