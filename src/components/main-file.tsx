@@ -204,7 +204,7 @@ export default function PolymarketClone() {
                     </div>
 
                     <div className="mt-auto">
-                      {market.outcomes.length === 2 && market.outcomes[0].color ? (
+                      {market.outcomes.length === 2 && 'color' in market.outcomes[0] ? (
                         <div className="space-y-2 mb-4">
                           <div className="flex space-x-2">
                             <Button size="sm" className="flex-1 bg-green-500 hover:bg-green-600 text-white">

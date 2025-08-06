@@ -28,7 +28,7 @@ export const TokenBalance = ({token, userAddress, lable, onBalanceLoaded}: {
       }
       _getBalance()
     }
-  }, [tokenData, userAddress,  callMethod, toHumanReadable, getBalance]);
+  }, [tokenData, userAddress,  callMethod, toHumanReadable, getBalance, token, onBalanceLoaded]);
 
   if (!token || !userAddress) {
     return <></>

@@ -245,7 +245,7 @@ export default function LaunchBetPage() {
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="max-w-xs">
-                          Clearly define the question and the criteria for a "Yes" or "No" outcome. The prompt should
+                          Clearly define the question and the criteria for a &quot;Yes&quot; or &quot;No&quot; outcome. The prompt should
                           be unambiguous and rely on publicly verifiable information.
                         </p>
                       </TooltipContent>
