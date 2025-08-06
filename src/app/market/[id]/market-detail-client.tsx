@@ -1,60 +1,95 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Share, Bell, ChevronDown, Info, HelpCircle, Copy } from "lucide-react"
+import { Share, Bell, HelpCircle, Copy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Header } from "@/components/header"
 import { NostrComments } from "@/components/nostr-comments"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-
-// Mock data for the market
-const marketData = {
-  id: 1,
-  title: "Fed rate cut in 2025?",
-  icon: "/placeholder.svg?height=40&width=40",
-  volume: "$769,882 Vol.",
-  endDate: "Dec 31, 2025",
-  currentOdds: 91,
-  change: "+2%",
-  yesPrice: "92¢",
-  noPrice: "10¢",
-  chartData: [
-    { time: "May", value: 85 },
-    { time: "Jun", value: 88 },
-    { time: "Jul", value: 91 },
-    { time: "Aug", value: 89 },
-  ],
-  nostrNoteId: "note10c9fb11f742e6dc05d8bbcb4af790a4453f1bc046e40ca1b5385996c63d93ba",
-  referralLink: "https://molyparket.com/r/user123",
-}
+import { AppConfig, Pool } from "@/types/pool"
+import { getPool, useMolyparket } from "@/hooks/use-molyparket"
+import { useConnectWalletSimple, useContracts, useErc20 } from "web3-react-ui"
+import { ZeroAddress } from "ethers"
+import { GLOBAL_CONFIG } from "@/types/token"
+import { useSearchParams } from "next/navigation"
 
 interface MarketDetailClientProps {
   id: string
 }
 
 export function MarketDetailClient({ id }: MarketDetailClientProps) {
-  console.log(id)
+  const { callMethod, error, execute } = useContracts();
+  const { chainId, address } = useConnectWalletSimple();
+  const [pool, setPool] = useState<Pool>({} as Pool);
+  const { molyparketInfo } = useMolyparket();
   const [betType, setBetType] = useState<"Buy" | "Sell">("Buy")
   const [selectedOutcome, setSelectedOutcome] = useState<"Yes" | "No">("Yes")
   const [amount, setAmount] = useState("")
   const [copied, setCopied] = useState(false)
-  const [favorites, setFavorites] = useState<Set<number>>(() => {
+  const { toHumanReadable, getBalance, toMachineReadable } = useErc20(molyparketInfo?.collateralTokenAddress || "", chainId!);
+  const [yesPrice, setYesPrice] = useState<string>("");
+  const [noPrice, setNoPrice] = useState<string>("");
+  const [balance, setBalance] = useState<string>("");
+  const volume = toHumanReadable(pool.collateral || "0");
+  const percentage = 100n * BigInt(pool.totalSupplyYes) / (BigInt(pool.totalSupplyYes) + BigInt(pool.totalSupplyNo));
+  const appConfig = GLOBAL_CONFIG['APP'] as AppConfig || {};
+  const contractAddress = appConfig.contractAddress || '';
+  const searchParams = useSearchParams()
+  const referrer = searchParams.get('r') || '';
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
     if (typeof window === "undefined") {
       return new Set()
     }
     const savedFavorites = localStorage.getItem("favoriteMarkets")
     return savedFavorites ? new Set(JSON.parse(savedFavorites)) : new Set()
   })
+  const referralLink = `https://molyparket.com/market/${id}?r=${address}`
 
   useEffect(() => {
     localStorage.setItem("favoriteMarkets", JSON.stringify(Array.from(favorites)))
   }, [favorites])
 
-  const handleToggleFavorite = (marketId: number) => {
+  // effect to load the pool using getPool
+  useEffect(() => {
+    if (!chainId || !molyparketInfo?.collateralTokenAddress) return;
+    const loadPool = async () => {
+      const pool = await getPool(chainId, molyparketInfo.collateralTokenAddress, id, callMethod)
+      setPool(pool)
+    }
+    loadPool()
+  }, [id, chainId, molyparketInfo?.collateralTokenAddress, callMethod])
+
+  useEffect(() => {
+    if (!chainId || !molyparketInfo?.collateralTokenAddress) return;
+    const loadYesPrice = async () => {
+      const yesPrice = await callMethod(chainId, molyparketInfo.collateralTokenAddress, "costToBuyYes", [id, 1n * BigInt(10 ** 18)])
+      setYesPrice(yesPrice)
+    } 
+    loadYesPrice()
+  }, [chainId, molyparketInfo?.collateralTokenAddress, callMethod, id, amount])
+
+  useEffect(() => {
+    if (!chainId || !molyparketInfo?.collateralTokenAddress) return;
+    const loadNoPrice = async () => {
+      const noPrice = await callMethod(chainId, molyparketInfo.collateralTokenAddress, "costToBuyNo", [id, 1n * BigInt(10 ** 18)])
+      setNoPrice(noPrice)
+    } 
+    loadNoPrice()
+  }, [chainId, molyparketInfo?.collateralTokenAddress, callMethod, id, amount])
+
+  useEffect(() => {
+    if (!address) return;
+    const loadBalance = async () => {
+      const balance = await getBalance(address)
+      setBalance(toHumanReadable(balance) || '')
+    }
+    loadBalance()
+  }, [getBalance, address, toHumanReadable])
+
+  const handleToggleFavorite = (marketId: string) => {
     const newFavorites = new Set(favorites)
     if (newFavorites.has(marketId)) {
       newFavorites.delete(marketId)
@@ -65,13 +100,49 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
   }
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(marketData.referralLink)
+    navigator.clipboard.writeText(referralLink)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const isFavorite = favorites.has(marketData.id)
+  const handleTrade = async () => {
+    if (!address || !chainId || !contractAddress) return;
+    const amountInWei = toMachineReadable(amount);
+    if (betType === "Buy") {
+      if (selectedOutcome === "Yes") {
+        //     external 
+        const tx = await execute(
+          contractAddress, 'function buyYes(uint256 poolId, uint256 amount, address referrer)',
+          [id, amountInWei, referrer || ZeroAddress], {gasLimit: 1000000, wait: true});
+        console.log('buy yes transaction:', tx);
+        onTransactionSubmitted(tx)
+      } else {
+        const tx = await execute(
+          contractAddress, 'function buyNo(uint256 poolId, uint256 amount, address referrer)',
+          [id, amountInWei, referrer || ZeroAddress], {gasLimit: 1000000, wait: true});
+        console.log('buy no transaction:', tx);
+        onTransactionSubmitted(tx)
+      }
+    } else {
+      if (selectedOutcome === "Yes") {
+        //     function sellYes(uint256 poolId, uint256 amount, address referrer) external {
+        const tx = await execute(
+          contractAddress, 'function sellYes(uint256 poolId, uint256 amount)',
+          [id, amountInWei], {gasLimit: 1000000, wait: true});
+        console.log('sell yes transaction:', tx);
+        onTransactionSubmitted(tx)
+      } else {
+        //     function sellNo(uint256 poolId, uint256 amount) external {
+        const tx = await execute(
+          contractAddress, 'function sellNo(uint256 poolId, uint256 amount)',
+          [id, amountInWei], {gasLimit: 1000000, wait: true});
+        console.log('sell no transaction:', tx);
+        onTransactionSubmitted(tx)
+      }
+    }
+  }
 
+  const isFavorite = favorites.has(pool.id)
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -80,18 +151,19 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2">
+            {error && <div className="text-red-500">{error}</div>}
             {/* Market Header */}
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-4">
                 <Avatar className="w-12 h-12">
-                  <AvatarImage src={marketData.icon || "/placeholder.svg"} />
+                  <AvatarImage src={pool.logoUrl || "/placeholder.svg"} />
                   <AvatarFallback>F</AvatarFallback>
                 </Avatar>
                 <div>
-                  <h1 className="text-2xl font-bold text-foreground">{marketData.title}</h1>
+                  <h1 className="text-2xl font-bold text-foreground">{pool.title}</h1>
                   <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-1">
-                    <span>{marketData.volume}</span>
-                    <span>📅 {marketData.endDate}</span>
+                    <span>{volume}</span>
+                    <span>📅 {pool.closingTime}</span>
                   </div>
                 </div>
               </div>
@@ -103,7 +175,7 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                   variant="ghost"
                   size="icon"
                   className="text-muted-foreground"
-                  onClick={() => handleToggleFavorite(marketData.id)}
+                  onClick={() => handleToggleFavorite(pool.id)}
                 >
                   <Bell className={`w-4 h-4 ${isFavorite ? "fill-current text-primary" : ""}`} />
                 </Button>
@@ -113,11 +185,11 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
             {/* Current Odds */}
             <div className="mb-6">
               <div className="flex items-baseline space-x-2">
-                <span className="text-4xl font-bold text-blue-600">{marketData.currentOdds}%</span>
+                <span className="text-4xl font-bold text-blue-600">{percentage}%</span>
                 <span className="text-lg text-muted-foreground">chance</span>
-                <Badge variant="secondary" className="text-green-600 bg-green-500/10 border-transparent">
+                {/* <Badge variant="secondary" className="text-green-600 bg-green-500/10 border-transparent">
                   {marketData.change}
-                </Badge>
+                </Badge> */}
               </div>
             </div>
 
@@ -129,12 +201,12 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center space-x-2">
                       <span className="font-semibold text-foreground">Yes</span>
-                      <span className="text-muted-foreground">{marketData.yesPrice}</span>
+                      <span className="text-muted-foreground">{pool.totalSupplyYes}</span>
                     </div>
-                    <span className="font-semibold text-foreground">{marketData.currentOdds}%</span>
+                    <span className="font-semibold text-foreground">{percentage}%</span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-2.5">
-                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${marketData.currentOdds}%` }} />
+                    <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${percentage}%` }} />
                   </div>
                 </div>
 
@@ -143,14 +215,14 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center space-x-2">
                       <span className="font-semibold text-foreground">No</span>
-                      <span className="text-muted-foreground">{marketData.noPrice}</span>
+                      <span className="text-muted-foreground">{pool.totalSupplyNo}</span>
                     </div>
-                    <span className="font-semibold text-foreground">{100 - marketData.currentOdds}%</span>
+                    <span className="font-semibold text-foreground">{100 - Number(percentage)}%</span>
                   </div>
                   <div className="w-full bg-secondary rounded-full h-2.5">
                     <div
                       className="bg-pink-500 h-2.5 rounded-full"
-                      style={{ width: `${100 - marketData.currentOdds}%` }}
+                      style={{ width: `${100 - Number(percentage)}%` }}
                     />
                   </div>
                 </div>
@@ -159,27 +231,6 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
 
             <div className="mt-6 space-y-6">
               {/* Order Book, Context, Rules */}
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <h3 className="font-semibold text-foreground">Order Book</h3>
-                      <Info className="w-4 h-4 text-muted-foreground" />
-                    </div>
-                    <ChevronDown className="w-4 h-4 text-muted-foreground" />
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-foreground">Market Context</h3>
-                    <Button variant="outline" size="sm" className="text-blue-600 border-blue-600 bg-transparent">
-                      Generate
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
               <Card>
                 <CardContent className="p-6">
                   <h3 className="font-semibold text-foreground mb-4">Rules</h3>
@@ -199,7 +250,7 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
             </div>
 
             {/* Nostr Comments */}
-            <NostrComments noteId={marketData.nostrNoteId} />
+            <NostrComments noteId={pool.discussionUrl} />
           </div>
 
           {/* Sidebar */}
@@ -229,10 +280,6 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                       Sell
                     </Button>
                   </div>
-                  <Button variant="ghost" className="flex items-center space-x-1 text-muted-foreground">
-                    <span className="text-sm">Market</span>
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
                 </div>
 
                 <div className="flex space-x-2 mb-4">
@@ -242,7 +289,7 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                     onClick={() => setSelectedOutcome("Yes")}
                     data-state={selectedOutcome === "Yes" ? "active" : "inactive"}
                   >
-                    Yes {marketData.yesPrice}
+                    Yes {yesPrice}
                   </Button>
                   <Button
                     variant={selectedOutcome === "No" ? "default" : "outline"}
@@ -250,12 +297,12 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                     onClick={() => setSelectedOutcome("No")}
                     data-state={selectedOutcome === "No" ? "active" : "inactive"}
                   >
-                    No {marketData.noPrice}
+                    No {noPrice}
                   </Button>
                 </div>
 
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-muted-foreground mb-2">Amount</label>
+                  <label className="block text-sm font-medium text-muted-foreground mb-2">Amount (Balance: USDT {balance})</label>
                   <div className="relative">
                     <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground text-2xl">
                       $
@@ -278,13 +325,14 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                     <Button variant="outline" size="sm" onClick={() => setAmount("100")}>
                       +$100
                     </Button>
-                    <Button variant="outline" size="sm">
+                    <Button variant="outline" size="sm" onClick={() => setAmount(balance)}>
                       Max
                     </Button>
                   </div>
                 </div>
 
-                <Button className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700 text-white mb-4">Trade</Button>
+                <Button className="w-full h-12 text-base bg-blue-600 hover:bg-blue-700 text-white mb-4"
+                  onClick={handleTrade} >Trade</Button>
 
                 <p className="text-xs text-muted-foreground text-center">
                   By trading, you agree to the <span className="text-blue-600 underline">Terms of Use</span>
@@ -319,7 +367,7 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                 <div className="space-y-2">
                   <label className="text-sm text-muted-foreground">Your referral link</label>
                   <div className="flex items-center space-x-2">
-                    <Input readOnly value={marketData.referralLink} className="bg-secondary border-none" />
+                    <Input readOnly value={referralLink} className="bg-secondary border-none" />
                     <Button variant="ghost" size="icon" onClick={handleCopy}>
                       <Copy className="w-4 h-4" />
                     </Button>

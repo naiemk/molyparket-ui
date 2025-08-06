@@ -3,108 +3,31 @@
 import type React from "react"
 import { useEffect, useState } from "react"
 
-import { Search, Menu, Bell, User } from "lucide-react"
+import { Search, Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Card, CardContent } from "@/components/ui/card"
-import Link from "next/link"
 import { Header } from "@/components/header"
 import { useMolyparket } from "@/hooks/use-molyparket"
+import { Pool } from "@/types/pool"
+import PoolCard from "./pool-card"
+import { useConnectWalletSimple } from "web3-react-ui"
 
-const markets = [
+const markets: Pool[] = [
   {
-    id: 1,
+    id: "1",
     title: "Will Ghislaine Maxwell cut a deal with the Fed...",
-    percentage: 34,
-    volume: "$6k Vol.",
-    avatar: "/placeholder.svg?height=32&width=32",
-    outcomes: [
-      { name: "Yes", percentage: 34, color: "green" },
-      { name: "No", percentage: 66, color: "red" },
-    ],
-  },
-  {
-    id: 2,
-    title: "Presidential Election Winner 2028",
-    percentage: 28,
-    volume: "$2m Vol.",
-    avatar: "/placeholder.svg?height=32&width=32",
-    outcomes: [
-      { name: "JD Vance", percentage: 28 },
-      { name: "Gavin Newsom", percentage: 14 },
-      { name: "Alexandria Ocasio-Cortez", percentage: 11 },
-    ],
-  },
-  {
-    id: 3,
-    title: "Jerome Powell out as Fed Chair in 2025?",
-    percentage: 14,
-    volume: "$7m Vol.",
-    avatar: "/placeholder.svg?height=32&width=32",
-    outcomes: [
-      { name: "Yes", percentage: 14, color: "green" },
-      { name: "No", percentage: 86, color: "red" },
-    ],
-  },
-  {
-    id: 4,
-    title: "Fed decision in July?",
-    percentage: 1,
-    volume: "$82m Vol.",
-    avatar: "/placeholder.svg?height=32&width=32",
-    outcomes: [
-      { name: "50+ bps decrease", percentage: 1 },
-      { name: "25 bps decrease", percentage: 4 },
-      { name: "No change", percentage: 95 },
-    ],
-  },
-  {
-    id: 5,
-    title: "New York City Mayoral Election",
-    percentage: 73,
-    volume: "$37m Vol.",
-    avatar: "/placeholder.svg?height=32&width=32",
-    outcomes: [
-      { name: "Zohran Mamdani", percentage: 73 },
-      { name: "Andrew Cuomo", percentage: 14 },
-      { name: "Eric Adams", percentage: 6 },
-    ],
-  },
-  {
-    id: 6,
-    title: "Israel x Hamas ceasefire by August 15?",
-    percentage: 25,
-    volume: "$2m Vol.",
-    avatar: "/placeholder.svg?height=32&width=32",
-    outcomes: [
-      { name: "Yes", percentage: 25, color: "green" },
-      { name: "No", percentage: 75, color: "red" },
-    ],
-  },
-  {
-    id: 7,
-    title: "Who will be named in newly released Epstein files?",
-    percentage: 36,
-    volume: "$48k Vol.",
-    avatar: "/placeholder.svg?height=32&width=32",
-    outcomes: [
-      { name: "Bill Clinton", percentage: 36 },
-      { name: "Prince Andrew", percentage: 32 },
-      { name: "Bill Gates", percentage: 28 },
-    ],
-  },
-  {
-    id: 8,
-    title: "Will Polymarket US go live in 2025?",
-    percentage: 69,
-    volume: "$239k Vol.",
-    avatar: "/placeholder.svg?height=32&width=32",
-    outcomes: [
-      { name: "Yes", percentage: 69, color: "green" },
-      { name: "No", percentage: 31, color: "red" },
-    ],
+    resolutionPrompt: "Will Ghislaine Maxwell cut a deal with the Fed?",
+    discussionUrl: "https://www.google.com",
+    tags: "Epstein, Breaking News, Trump Presidency, Israel, Jerome Powell, Ghislaine Maxwell, Thailand-Cambodia, US Elections",
+    logoUrl: "/placeholder.svg?height=32&width=32",
+    resolution: "Yes",
+    totalSupplyYes: "100",
+    totalSupplyNo: "200",
+    collateral: "100",
+    closingTime: "2025-01-01",
+    resolutionTime: "2025-01-01",
+    creator: "0x1234567890123456789012345678901234567890",
   },
 ]
 
@@ -122,9 +45,10 @@ const markets = [
 
 export default function PolymarketClone() {
   const { molyparketInfo } = useMolyparket();
+  const { chainId } = useConnectWalletSimple();
   const categories = molyparketInfo?.keywordsSorted || [];
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
-  const [favorites, setFavorites] = useState<Set<number>>(() => {
+  const [favorites, setFavorites] = useState<Set<string>>(() => {
     if (typeof window === "undefined") {
       return new Set()
     }
@@ -136,9 +60,7 @@ export default function PolymarketClone() {
     localStorage.setItem("favoriteMarkets", JSON.stringify(Array.from(favorites)))
   }, [favorites])
 
-  const handleToggleFavorite = (e: React.MouseEvent, marketId: number) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleFav = (marketId: string) => {
     const newFavorites = new Set(favorites)
     if (newFavorites.has(marketId)) {
       newFavorites.delete(marketId)
@@ -184,78 +106,12 @@ export default function PolymarketClone() {
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {filteredMarkets.length > 0 ? (
-            filteredMarkets.map((market) => (
-              <Link key={market.id} href={`/market/${market.id}`} className="block">
-                <Card className="hover:border-primary transition-colors duration-200 h-full">
-                  <CardContent className="p-4 flex flex-col h-full">
-                    <div className="flex items-start space-x-3 mb-3">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={market.avatar || "/placeholder.svg"} />
-                        <AvatarFallback>U</AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-foreground line-clamp-2 mb-2">{market.title}</h3>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-3xl font-bold text-foreground">{market.percentage}%</span>
-                      <span className="text-xs text-muted-foreground">chance</span>
-                    </div>
-
-                    <div className="mt-auto">
-                      {market.outcomes.length === 2 && 'color' in market.outcomes[0] ? (
-                        <div className="space-y-2 mb-4">
-                          <div className="flex space-x-2">
-                            <Button size="sm" className="flex-1 bg-green-500 hover:bg-green-600 text-white">
-                              Buy Yes ↗
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1 border-red-500 text-red-500 hover:bg-red-500/10 bg-transparent"
-                            >
-                              Buy No ↘
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-1 mb-4">
-                          {market.outcomes.slice(0, 3).map((outcome, index) => (
-                            <div key={index} className="flex items-center justify-between text-xs">
-                              <span className="text-muted-foreground">{outcome.name}</span>
-                              <div className="flex items-center space-x-2">
-                                <span className="font-medium text-foreground">{outcome.percentage}%</span>
-                                <span className="text-green-600">Yes</span>
-                                <span className="text-red-600">No</span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span>{market.volume}</span>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={(e) => handleToggleFavorite(e, market.id)}
-                            className="p-1 hover:text-primary"
-                            aria-label="Toggle favorite"
-                          >
-                            <Bell
-                              className={`w-3.5 h-3.5 transition-colors ${
-                                favorites.has(market.id) ? "fill-current text-primary" : ""
-                              }`}
-                            />
-                          </button>
-                          <User className="w-3.5 h-3.5" />
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))
+            filteredMarkets.map((market, i) => ( <PoolCard
+              key={i}
+              pool={market}
+              chainId={chainId || ''}
+              tokenContract={molyparketInfo?.collateralTokenAddress || ""}
+              fav={favorites.has(market.id)} favClicked={handleFav} /> ))
           ) : (
             <div className="col-span-full text-center py-12 text-muted-foreground">
               <p>No favorite markets found.</p>

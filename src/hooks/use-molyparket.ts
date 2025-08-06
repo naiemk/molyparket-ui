@@ -21,7 +21,7 @@ export interface MolyparketInfo {
     keywords: { [key: string]: number };
 }
 
-export async function getPool(chainId: string, contractAddress: string, id: number,
+export async function getPool(chainId: string, contractAddress: string, id: string,
     callMethod: (chainId: string, contractAddress: string, method: string, params: unknown[]) => Promise<unknown>) {
     const res = await callMethod(chainId, contractAddress,
         /*
@@ -119,7 +119,7 @@ export function useMolyparket(lookBack: number = PAGE_SIZE) {
         const getPools = async (startIndex: number) => {
             for (let i = startIndex; i < startIndex + lookBack; i++) {
                 const pool = await GlobalCache.getAsync(`${chainId}-${contractAddress}-pool-${i}`, async () =>
-                    getPool(chainId, contractAddress, i, callMethod));
+                    getPool(chainId, contractAddress, i.toString(), callMethod));
                 setPools({ ...pools, [i.toString()]: pool });
             }
         }
