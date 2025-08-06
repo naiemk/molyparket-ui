@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import { Header } from "@/components/header"
+import { useMolyparket } from "@/hooks/use-molyparket"
 
 const markets = [
   {
@@ -107,19 +108,21 @@ const markets = [
   },
 ]
 
-const categories = [
-  "All",
-  "Epstein",
-  "Breaking News",
-  "Trump Presidency",
-  "Israel",
-  "Jerome Powell",
-  "Ghislaine Maxwell",
-  "Thailand-Cambodia",
-  "US Elections",
-]
+// const categories = [
+//   "All",
+//   "Epstein",
+//   "Breaking News",
+//   "Trump Presidency",
+//   "Israel",
+//   "Jerome Powell",
+//   "Ghislaine Maxwell",
+//   "Thailand-Cambodia",
+//   "US Elections",
+// ]
 
 export default function PolymarketClone() {
+  const { molyparketInfo } = useMolyparket();
+  const categories = molyparketInfo?.keywordsSorted || [];
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
   const [favorites, setFavorites] = useState<Set<number>>(() => {
     if (typeof window === "undefined") {

@@ -35,6 +35,15 @@ export function Header({
 
         <div className="flex items-center space-x-2 md:space-x-4">
           <Button
+            variant="outline"
+            size="lg"
+            onClick={() => {}}
+            className="text-muted-foreground hover:text-foreground"
+            aria-label="Launch a Bet"
+          >
+            <Link href="/launch">Launch a Bet</Link>
+          </Button>
+          <Button
             variant="ghost"
             size="icon"
             onClick={onBellClick}
