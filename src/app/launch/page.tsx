@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Header } from "@/components/header"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -11,12 +11,23 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { HelpCircle, ExternalLink, Bot } from 'lucide-react'
 import { DatePicker } from "@/components/ui/date-picker"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useConnectWalletSimple, useContracts, useErc20 } from "web3-react-ui"
+import { GLOBAL_CONFIG } from "@/types/token"
+import { AppConfig } from "@/types/pool"
+import { useMolyparket } from "@/hooks/use-molyparket"
 
 const MAX_TITLE_LENGTH = 120
 const MAX_PROMPT_LENGTH = 2048
 const MIN_COLLATERAL = 20
 
 export default function LaunchBetPage() {
+  const { error, execute } = useContracts()
+  const { address, chainId } = useConnectWalletSimple()
+  const { molyparketInfo } = useMolyparket()
+  const { toHumanReadable, toMachineReadable, getBalance } = useErc20(molyparketInfo?.collateralTokenAddress || "", chainId!)
+  const appConfig = GLOBAL_CONFIG['APP'] as AppConfig || {}
+  const [userBalance, setUserBalance] = useState("0")
+  const contractAddress = appConfig.contractAddress || ''
   const [formData, setFormData] = useState({
     title: "",
     logoUrl: "",
@@ -28,7 +39,6 @@ export default function LaunchBetPage() {
     tags: "",
   })
   const [logoError, setLogoError] = useState("")
-  const [userBalance] = useState(1234.56) // Mock balance
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target
@@ -94,10 +104,47 @@ export default function LaunchBetPage() {
     }
   }
 
+  useEffect(() => {
+    if (!address || !chainId || !molyparketInfo?.collateralTokenAddress) return;
+    const loadBalance = async () => {
+      const balance = await getBalance(address!)
+      setUserBalance(toHumanReadable(balance) || '0')
+    }
+    loadBalance()
+  }, [getBalance, address, chainId, molyparketInfo?.collateralTokenAddress, toHumanReadable])
+
   const generateLogoPrompt = () => {
     const prompt = `Create a logo, 400x400, for a prediction market with the title: "${formData.title}"`
     const url = `https://chat.openai.com/?q=${encodeURIComponent(prompt)}`
     window.open(url, '_blank')
+  }
+
+  const handleCreateMarket = async () => {
+    if (!address || !chainId || !contractAddress) return;
+    /*
+        function createBet(
+        string memory _title,
+        string memory _resolutionPrompt,
+        uint256 _initialLiquidity,
+        uint256 _closingTime,
+        uint256 _resolutionTime,
+        string memory _discussionUrl,
+        string memory _tags,
+        string memory _logoUrl) external {
+    */
+    const tx = await execute(
+      contractAddress, 'function createBet(string memory _title, string memory _resolutionPrompt, uint256 _initialLiquidity, uint256 _closingTime, uint256 _resolutionTime, string memory _discussionUrl, string memory _tags, string memory _logoUrl)',
+      [
+        formData.title,
+        formData.resolutionPrompt,
+        toMachineReadable(formData.collateral),
+        formData.closingTime,
+        formData.resolutionTime,
+        formData.discussionUrl,
+        formData.tags,
+        formData.logoUrl], {gasLimit: 1000000, wait: true});
+    console.log('create market transaction:', tx);
+    onTransactionSubmitted(tx)
   }
 
   const titleCharCount = formData.title.length
@@ -310,9 +357,10 @@ export default function LaunchBetPage() {
           </Card>
 
           <div className="flex justify-end">
-            <Button type="submit" size="lg">
+            <Button type="submit" size="lg" onClick={handleCreateMarket}>
               Launch Market
             </Button>
+            {error && <p className="text-sm text-destructive">{error}</p>}
           </div>
         </form>
       </main>
