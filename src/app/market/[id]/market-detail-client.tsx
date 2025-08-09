@@ -279,7 +279,7 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
             </div>
 
             {/* Nostr Comments */}
-            <NostrComments noteId={pool.discussionUrl} />
+            <NostrComments noteUrl={pool.discussionUrl} />
           </div>
 
           {/* Sidebar */}

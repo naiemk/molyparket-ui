@@ -362,7 +362,7 @@ export default function LaunchBetPage() {
               </div>
               <div className="space-y-2">
                 <div className="flex items-center space-x-2">
-                  <Label htmlFor="discussionUrl">Discussion URL (Optional)</Label>
+                  <Label htmlFor="discussionUrl">Social Media Post URL (Optional)</Label>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger>
@@ -370,26 +370,37 @@ export default function LaunchBetPage() {
                       </TooltipTrigger>
                       <TooltipContent>
                         <p className="max-w-xs">
-                          A link to a Nostr note where traders can discuss this market. This promotes transparency and
-                          community engagement.
+                          Share a link to your X (Twitter) post or Nostr note about this bet. This allows others to discover, 
+                          share, and discuss your prediction market, increasing engagement and liquidity.
                         </p>
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </div>
+                <p className="text-sm text-muted-foreground">
+                  Create and share a post about this bet on X (Twitter) or Nostr to help others discover and discuss it.
+                </p>
                 <div className="flex items-center space-x-2">
                   <Input
                     id="discussionUrl"
                     value={formData.discussionUrl}
                     onChange={handleInputChange}
-                    placeholder="nostr:note1..."
+                    placeholder="https://x.com/username/status/... or nostr:note1..."
                   />
-                  <Button variant="outline" asChild>
-                    <a href="https://nostrudel.ninja/" target="_blank" rel="noopener noreferrer">
-                      Create
-                      <ExternalLink className="w-4 h-4 ml-2" />
-                    </a>
-                  </Button>
+                  <div className="flex space-x-2">
+                    <Button variant="outline" asChild>
+                      <a href="https://x.com/compose/tweet" target="_blank" rel="noopener noreferrer">
+                        Create X Post
+                        <ExternalLink className="w-4 h-4 ml-2" />
+                      </a>
+                    </Button>
+                    <Button variant="outline" asChild>
+                      <a href="https://nostrudel.ninja/" target="_blank" rel="noopener noreferrer">
+                        Create Nostr Note
+                        <ExternalLink className="w-4 h-4 ml-2" />
+                      </a>
+                    </Button>
+                  </div>
                 </div>
               </div>
               <div className="space-y-2">
