@@ -9,27 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Header } from "@/components/header"
 import { useMolyparket } from "@/hooks/use-molyparket"
-import { Pool } from "@/types/pool"
 import PoolCard from "./pool-card"
 import { useConnectWalletSimple } from "web3-react-ui"
-
-const markets: Pool[] = [
-  {
-    id: "1",
-    title: "Will Ghislaine Maxwell cut a deal with the Fed...",
-    resolutionPrompt: "Will Ghislaine Maxwell cut a deal with the Fed?",
-    discussionUrl: "https://www.google.com",
-    tags: "Epstein, Breaking News, Trump Presidency, Israel, Jerome Powell, Ghislaine Maxwell, Thailand-Cambodia, US Elections",
-    logoUrl: "/placeholder.svg?height=32&width=32",
-    resolution: "Yes",
-    totalSupplyYes: "100",
-    totalSupplyNo: "200",
-    collateral: "100",
-    closingTime: "2025-01-01",
-    resolutionTime: "2025-01-01",
-    creator: "0x1234567890123456789012345678901234567890",
-  },
-]
 
 // const categories = [
 //   "All",
@@ -48,6 +29,7 @@ export default function PolymarketClone() {
   const { chainId } = useConnectWalletSimple();
   const categories = molyparketInfo?.keywordsSorted || [];
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+  const markets = molyparketInfo?.pools || [];
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     if (typeof window === "undefined") {
       return new Set()

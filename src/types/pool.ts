@@ -41,3 +41,5 @@ export interface AppConfig {
     [key: string]: string;
   };
 }
+
+export const DEFAULT_CHAIN_ID = '11155111';

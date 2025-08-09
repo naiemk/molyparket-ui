@@ -9,13 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Header } from "@/components/header"
 import { NostrComments } from "@/components/nostr-comments"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { AppConfig, Pool } from "@/types/pool"
+import { AppConfig, DEFAULT_CHAIN_ID, Pool } from "@/types/pool"
 import { getPool, useMolyparket } from "@/hooks/use-molyparket"
 import { useConnectWalletSimple, useContracts, useErc20 } from "web3-react-ui"
 import { ZeroAddress } from "ethers"
 import { GLOBAL_CONFIG } from "@/types/token"
 import { useSearchParams } from "next/navigation"
 import { TransactionModal } from "@/components/web3/transaction-modal"
+import { weiToDecimal } from "@/lib/utils"
 
 interface MarketDetailClientProps {
   id: string
@@ -23,7 +24,11 @@ interface MarketDetailClientProps {
 
 export function MarketDetailClient({ id }: MarketDetailClientProps) {
   const { callMethod, error, execute } = useContracts();
-  const { chainId, address } = useConnectWalletSimple();
+  let { chainId } = useConnectWalletSimple();
+  if (!chainId) { // TODO: Get the default chainId from config
+    chainId = DEFAULT_CHAIN_ID;
+  }
+  const { address } = useConnectWalletSimple();
   const [pool, setPool] = useState<Pool>({} as Pool);
   const { molyparketInfo } = useMolyparket();
   const [betType, setBetType] = useState<"Buy" | "Sell">("Buy")
@@ -39,11 +44,12 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
   const percentage = totalYesNo > 0 ?
     100n * BigInt(pool.totalSupplyYes) / totalYesNo : 0n;
   const appConfig = GLOBAL_CONFIG['APP'] as AppConfig || {};
-  const contractAddress = appConfig.contractAddress || '';
+  const contractAddress = (appConfig?.betMarketContracts || [])[chainId || 'N/A'] || '';
   const searchParams = useSearchParams()
   const referrer = searchParams.get('r') || '';
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [transactionId, setTransactionId] = useState<string | null>(null);
+  console.log('POOL', pool, id, molyparketInfo?.collateralTokenAddress)
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     if (typeof window === "undefined") {
       return new Set()
@@ -59,31 +65,36 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
 
   // effect to load the pool using getPool
   useEffect(() => {
-    if (!chainId || !molyparketInfo?.collateralTokenAddress) return;
+    if (!chainId || !contractAddress) return;
     const loadPool = async () => {
-      const pool = await getPool(chainId, molyparketInfo.collateralTokenAddress, id, callMethod)
+      const pool = await getPool(chainId, contractAddress, id, callMethod)
       setPool(pool)
     }
     loadPool()
-  }, [id, chainId, molyparketInfo?.collateralTokenAddress, callMethod])
+  }, [id, chainId, contractAddress, callMethod])
 
   useEffect(() => {
-    if (!chainId || !molyparketInfo?.collateralTokenAddress) return;
+    if (!chainId || !contractAddress) return;
     const loadYesPrice = async () => {
-      const yesPrice = await callMethod(chainId, molyparketInfo.collateralTokenAddress, "costToBuyYes", [id, 1n * BigInt(10 ** 18)])
-      setYesPrice(yesPrice)
+      const yesPrice = await callMethod(chainId, contractAddress, "function costToBuyYes(uint256,uint256) view returns (uint256)", [id, 1n * BigInt(10 ** 18)])
+      // Convert wei to human-readable decimal price
+      const humanReadablePrice = weiToDecimal(yesPrice)
+      console.log('yesPrice', yesPrice, humanReadablePrice)
+      setYesPrice(humanReadablePrice)
     } 
     loadYesPrice()
-  }, [chainId, molyparketInfo?.collateralTokenAddress, callMethod, id, amount])
+  }, [chainId, contractAddress, callMethod, id])
 
   useEffect(() => {
-    if (!chainId || !molyparketInfo?.collateralTokenAddress) return;
+    if (!chainId || !contractAddress) return;
     const loadNoPrice = async () => {
-      const noPrice = await callMethod(chainId, molyparketInfo.collateralTokenAddress, "costToBuyNo", [id, 1n * BigInt(10 ** 18)])
-      setNoPrice(noPrice)
+      const noPrice = await callMethod(chainId, contractAddress, "function costToBuyNo(uint256,uint256) view returns (uint256)", [id, 1n * BigInt(10 ** 18)])
+      // Convert wei to human-readable decimal price
+      const humanReadablePrice = weiToDecimal(noPrice)
+      setNoPrice(humanReadablePrice)
     } 
     loadNoPrice()
-  }, [chainId, molyparketInfo?.collateralTokenAddress, callMethod, id, amount])
+  }, [chainId, contractAddress, callMethod, id, amount])
 
   useEffect(() => {
     if (!address) return;
@@ -125,7 +136,7 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
         const tx = await execute(
           contractAddress, 'function buyYes(uint256 poolId, uint256 amount, address referrer)',
           [id, amountInWei, referrer || ZeroAddress], {gasLimit: 1000000, wait: true});
-        console.log('buy yes transaction:', tx);
+        console.log('buy yes transaction:', tx, amountInWei, referrer);
         onTransactionSubmitted(tx)
       } else {
         const tx = await execute(
@@ -152,8 +163,6 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
       }
     }
   }
-
-  console.log('pool', pool)
 
   const isFavorite = favorites.has(pool.id)
   return (
@@ -220,7 +229,7 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center space-x-2">
                       <span className="font-semibold text-foreground">Yes</span>
-                      <span className="text-muted-foreground">{pool.totalSupplyYes}</span>
+                      <span className="text-muted-foreground">{weiToDecimal(pool.totalSupplyYes)}</span>
                     </div>
                     <span className="font-semibold text-foreground">{percentage}%</span>
                   </div>
@@ -234,7 +243,7 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center space-x-2">
                       <span className="font-semibold text-foreground">No</span>
-                      <span className="text-muted-foreground">{pool.totalSupplyNo}</span>
+                      <span className="text-muted-foreground">{weiToDecimal(pool.totalSupplyNo)}</span>
                     </div>
                     <span className="font-semibold text-foreground">{100 - Number(percentage)}%</span>
                   </div>
@@ -254,7 +263,9 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                 <CardContent className="p-6">
                   <h3 className="font-semibold text-foreground mb-4">Rules</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    {pool.resolutionPrompt}
+                    <pre className="text-sm text-muted-foreground mb-4 whitespace-pre-wrap break-words">
+                      {pool.resolutionPrompt}
+                    </pre>
                   </p>
                   {/* <Button variant="link" size="sm" className="text-blue-600 p-0">
                     Show more
@@ -380,8 +391,9 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                       </Tooltip>
                     </TooltipProvider>
                   </div>
-                  <span className="font-semibold text-foreground">$20.03</span>
+                  <span className="font-semibold text-foreground">$0</span>
                 </div>
+                {address ? (
                 <div className="space-y-2">
                   <label className="text-sm text-muted-foreground">Your referral link</label>
                   <div className="flex items-center space-x-2">
@@ -392,6 +404,11 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                   </div>
                   {copied && <p className="text-xs text-green-600">Copied to clipboard!</p>}
                 </div>
+                ): (
+                <div className="space-y-2">
+                  <label className="text-sm text-muted-foreground">Connect your wallet to see your referral rewards</label>
+                </div>
+                )}
               </CardContent>
             </Card>
           </div>
