@@ -15,6 +15,7 @@ import { useConnectWalletSimple, useContracts, useErc20 } from "web3-react-ui"
 import { ZeroAddress } from "ethers"
 import { GLOBAL_CONFIG } from "@/types/token"
 import { useSearchParams } from "next/navigation"
+import { TransactionModal } from "@/components/web3/transaction-modal"
 
 interface MarketDetailClientProps {
   id: string
@@ -34,11 +35,15 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
   const [noPrice, setNoPrice] = useState<string>("");
   const [balance, setBalance] = useState<string>("");
   const volume = toHumanReadable(pool.collateral || "0");
-  const percentage = 100n * BigInt(pool.totalSupplyYes) / (BigInt(pool.totalSupplyYes) + BigInt(pool.totalSupplyNo));
+  const totalYesNo = BigInt(pool.totalSupplyYes || '0') + BigInt(pool.totalSupplyNo || '0');
+  const percentage = totalYesNo > 0 ?
+    100n * BigInt(pool.totalSupplyYes) / totalYesNo : 0n;
   const appConfig = GLOBAL_CONFIG['APP'] as AppConfig || {};
   const contractAddress = appConfig.contractAddress || '';
   const searchParams = useSearchParams()
   const referrer = searchParams.get('r') || '';
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [transactionId, setTransactionId] = useState<string | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     if (typeof window === "undefined") {
       return new Set()
@@ -105,6 +110,12 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const onTransactionSubmitted = (tx: string) => {
+    console.log('transaction submitted:', tx);
+    setTransactionId(tx)
+    setIsTransactionModalOpen(true)
+  }
+
   const handleTrade = async () => {
     if (!address || !chainId || !contractAddress) return;
     const amountInWei = toMachineReadable(amount);
@@ -142,9 +153,17 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
     }
   }
 
+  console.log('pool', pool)
+
   const isFavorite = favorites.has(pool.id)
   return (
     <div className="min-h-screen bg-background">
+      <TransactionModal
+        isOpen={isTransactionModalOpen}
+        onClose={() => setIsTransactionModalOpen(false)}
+        transactionId={transactionId || ''}
+        chainId={chainId || ''}
+      />
       <Header />
 
       <div className="max-w-7xl mx-auto px-4 py-6">
@@ -235,12 +254,11 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                 <CardContent className="p-6">
                   <h3 className="font-semibold text-foreground mb-4">Rules</h3>
                   <p className="text-sm text-muted-foreground mb-4">
-                    This market will resolve to &quot;Yes&quot; if the upper bound of the target federal funds rate is decreased
-                    at any point between March 4 and December 31, 2025.
+                    {pool.resolutionPrompt}
                   </p>
-                  <Button variant="link" size="sm" className="text-blue-600 p-0">
+                  {/* <Button variant="link" size="sm" className="text-blue-600 p-0">
                     Show more
-                  </Button>
+                  </Button> */}
                   <div className="mt-4 pt-4 border-t">
                     <h4 className="font-semibold text-foreground mb-2">AI Model</h4>
                     <p className="text-sm text-muted-foreground font-mono">system, openai-gpt-o3-simple-text</p>

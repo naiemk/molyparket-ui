@@ -37,5 +37,7 @@ export interface Pool {
 
 export interface AppConfig {
   chainId: string;
-  contractAddress: string;
+  betMarketContracts: {
+    [key: string]: string;
+  };
 }

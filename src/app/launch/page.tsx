@@ -15,6 +15,7 @@ import { useConnectWalletSimple, useContracts, useErc20 } from "web3-react-ui"
 import { GLOBAL_CONFIG } from "@/types/token"
 import { AppConfig } from "@/types/pool"
 import { useMolyparket } from "@/hooks/use-molyparket"
+import { TransactionModal } from "@/components/web3/transaction-modal"
 
 const MAX_TITLE_LENGTH = 120
 const MAX_PROMPT_LENGTH = 2048
@@ -24,10 +25,13 @@ export default function LaunchBetPage() {
   const { error, execute } = useContracts()
   const { address, chainId } = useConnectWalletSimple()
   const { molyparketInfo } = useMolyparket()
+  console.log('molyparketInfo', molyparketInfo)
   const { toHumanReadable, toMachineReadable, getBalance } = useErc20(molyparketInfo?.collateralTokenAddress || "", chainId!)
   const appConfig = GLOBAL_CONFIG['APP'] as AppConfig || {}
   const [userBalance, setUserBalance] = useState("0")
-  const contractAddress = appConfig.contractAddress || ''
+  const contractAddress = (appConfig.betMarketContracts || [])[chainId || 'N/A'] || ''
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [transactionId, setTransactionId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: "",
     logoUrl: "",
@@ -119,8 +123,22 @@ export default function LaunchBetPage() {
     window.open(url, '_blank')
   }
 
+  const onTransactionSubmitted = (tx: string) => {
+    console.log('transaction submitted:', tx);
+    setTransactionId(tx)
+    setIsTransactionModalOpen(true)
+  }
+
   const handleCreateMarket = async () => {
     if (!address || !chainId || !contractAddress) return;
+    if (!molyparketInfo?.collateralTokenAddress) {
+      console.error('No collateral token address found');
+      return;
+    }
+    if (!userBalance) {
+      console.error('No balance found');
+      return;
+    }
     /*
         function createBet(
         string memory _title,
@@ -132,14 +150,19 @@ export default function LaunchBetPage() {
         string memory _tags,
         string memory _logoUrl) external {
     */
+   const closingTime = formData.closingTime ? formData.closingTime.getTime() / 1000 : 0
+   const resolutionTime = formData.resolutionTime ? formData.resolutionTime.getTime() / 1000 : 0
+   const machineAmount = toMachineReadable(formData.collateral)
+   console.log('machineAmount', { machineAmount, closingTime, resolutionTime })
+   console.log('About to create BET!', formData)
     const tx = await execute(
       contractAddress, 'function createBet(string memory _title, string memory _resolutionPrompt, uint256 _initialLiquidity, uint256 _closingTime, uint256 _resolutionTime, string memory _discussionUrl, string memory _tags, string memory _logoUrl)',
       [
         formData.title,
         formData.resolutionPrompt,
-        toMachineReadable(formData.collateral),
-        formData.closingTime,
-        formData.resolutionTime,
+        machineAmount,
+        closingTime,
+        resolutionTime,
         formData.discussionUrl,
         formData.tags,
         formData.logoUrl], {gasLimit: 1000000, wait: true});
@@ -152,6 +175,12 @@ export default function LaunchBetPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <TransactionModal
+        isOpen={isTransactionModalOpen}
+        onClose={() => setIsTransactionModalOpen(false)}
+        transactionId={transactionId || ''}
+        chainId={chainId || ''}
+      />
       <Header />
       <main className="max-w-4xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-bold text-foreground mb-6">Launch a New Market</h1>
@@ -255,7 +284,7 @@ export default function LaunchBetPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <Label htmlFor="collateral">Initial Liquidity (USDT)</Label>
-                  <p className="text-sm text-muted-foreground">Your Balance: ${userBalance.toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground">Your Balance: ${parseFloat(userBalance).toFixed(2)}</p>
                 </div>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
@@ -357,7 +386,14 @@ export default function LaunchBetPage() {
           </Card>
 
           <div className="flex justify-end">
-            <Button type="submit" size="lg" onClick={handleCreateMarket}>
+            <Button
+            type="button"
+            size="lg"
+            aria-label="Launch a Bet"
+            onClick={handleCreateMarket} 
+            disabled={!formData.title || !formData.resolutionPrompt || !formData.closingTime ||
+            !formData.resolutionTime || !formData.collateral || !formData.logoUrl}
+            >
               Launch Market
             </Button>
             {error && <p className="text-sm text-destructive">{error}</p>}

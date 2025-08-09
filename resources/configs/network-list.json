@@ -82,7 +82,7 @@
   {
     "namespace": "evm",
     "id": "11155111",
-    "rpcUrl": "https://eth-sepolia.g.alchemy.com/public",
+    "rpcUrl": "https://ethereum-sepolia-rpc.publicnode.com",
     "label": "Sepolia",
     "token": "ETH",
     "icon": "https://icons.llamao.fi/icons/chains/rsz_ethereum.jpg",
