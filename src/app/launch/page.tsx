@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { HelpCircle, ExternalLink, Bot } from 'lucide-react'
+import { HelpCircle, ExternalLink, Bot, Loader2 } from 'lucide-react'
 import { DatePicker } from "@/components/ui/date-picker"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ApprovableButton, useConnectWalletSimple, useContracts, useErc20 } from "web3-react-ui"
@@ -428,7 +428,7 @@ export default function LaunchBetPage() {
                       onClick={onApprove}
                       disabled={pending}
                     >
-                      Approve {pending ? '...' : ''}
+                      Approve {pending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : ''}
                     </Button>)}
               actionButton={
                     <Button 
@@ -439,7 +439,7 @@ export default function LaunchBetPage() {
                         !formData.resolutionTime || !formData.collateral || !formData.logoUrl
                       }
                     >
-                      Launch Market {pending ? '...' : ''}
+                      Launch Market {pending ? <Loader2 className="w-4 h-4 animate-spin ml-2" /> : ''}
                     </Button>}
               unknownState={ <Button 
                       className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"

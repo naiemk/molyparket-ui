@@ -19,15 +19,25 @@
     }
  */
 
+export enum Resolution {
+  UNRESOLVED = "0",
+  YES = "1", 
+  NO = "2",
+  INCONCLUSIVE = "3"
+}
+
 export interface Pool {
   id: string;
   creator: string;
   closingTime: string;
   resolutionTime: string;
+  b: string; // SD59x18 parameter
+  nYes: string; // SD59x18 parameter
+  nNo: string; // SD59x18 parameter
   totalSupplyYes: string;
   totalSupplyNo: string;
   collateral: string;
-  resolution: string;
+  resolution: Resolution | string;
   title: string;
   resolutionPrompt: string;
   discussionUrl: string;
