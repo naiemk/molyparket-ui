@@ -49,6 +49,8 @@ export function TradeControls({
   const searchParams = useSearchParams()
   const referrer = searchParams.get('r') || '';
 
+  console.log('ERROR', error)
+
   // Check if pool is closed (current time > closing time)
   const isPoolClosed = useCallback(() => {
     const currentTime = Math.floor(Date.now() / 1000);
@@ -76,6 +78,7 @@ export function TradeControls({
     if (!isPoolClosed() || !address || !chainId || !contractAddress) return;
     
     const loadWithdrawableAmount = async () => {
+      if (!address || !chainId || !contractAddress || !pool.id) return;
       setIsLoadingWithdrawable(true);
       try {
         const withdrawable = await callMethod(
@@ -131,15 +134,16 @@ export function TradeControls({
         }
       } else {
         if (selectedOutcome === "Yes") {
+          console.log('sell yes transaction:', amountInWei, pool.id, contractAddress);
           const tx = await execute(
-            contractAddress, 'function sellYes(uint256 poolId, uint256 amount)',
-            [pool.id, amountInWei], {wait: true});
+            contractAddress, 'function sellYes(uint256 poolId, uint256 amount, address referrer)',
+            [pool.id, amountInWei, referrer || ZeroAddress], {wait: true});
           console.log('sell yes transaction:', tx);
           onTransactionSubmitted(tx)
         } else {
           const tx = await execute(
-            contractAddress, 'function sellNo(uint256 poolId, uint256 amount)',
-            [pool.id, amountInWei], {wait: true});
+            contractAddress, 'function sellNo(uint256 poolId, uint256 amount, address referrer)',
+            [pool.id, amountInWei, referrer || ZeroAddress], {wait: true});
           console.log('sell no transaction:', tx);
           onTransactionSubmitted(tx)
         }
@@ -174,8 +178,6 @@ export function TradeControls({
     console.log('Resolve transaction:', tx);
     if (tx) {
       onTransactionSubmitted(tx);
-      // Refresh the pool data after resolution
-      window.location.reload();
     }
     setPending(false);
   };
@@ -190,15 +192,12 @@ export function TradeControls({
       [pool.id], 
       {
         wait: true,
-        gasLimit: 500000, // Set a reasonable gas limit for withdraw
-        gasPrice: undefined // Let the wallet estimate the gas price
       }
     );
     console.log('withdraw transaction:', tx);
     if (tx) {
       onTransactionSubmitted(tx);
       // Refresh the pool data after withdrawal
-      window.location.reload();
     }
     setPending(false);
   };

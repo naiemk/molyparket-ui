@@ -74,10 +74,10 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
   useEffect(() => {
     if (!chainId || !contractAddress) return;
     const loadYesPrice = async () => {
-      const yesPrice = await callMethod(chainId, contractAddress, "function costToBuyYes(uint256,uint256) view returns (uint256)", [id, 1n * BigInt(10 ** 18)])
+      const yesPrice = await callMethod(chainId, contractAddress, "function costToBuyYes(uint256,uint256) view returns (uint256)", [id, BigInt(10 ** 18)])
       // Convert wei to human-readable decimal price
       const humanReadablePrice = weiToDecimal(yesPrice)
-      console.log('yesPrice', yesPrice, humanReadablePrice)
+      console.log('yesPrice', yesPrice, humanReadablePrice, id)
       setYesPrice(humanReadablePrice)
     } 
     loadYesPrice()
@@ -116,8 +116,6 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
     loadNoBalance()
   }, [chainId, contractAddress, callMethod, id, address])
 
-
-
   useEffect(() => {
     if (!address) return;
     const loadBalance = async () => {
@@ -144,6 +142,7 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
   }
 
   const onTransactionSubmitted = (tx: { hash: string }) => {
+    if (!tx?.hash) return;
     console.log('transaction submitted:', tx);
     setTransactionId(tx.hash)
     setIsTransactionModalOpen(true)

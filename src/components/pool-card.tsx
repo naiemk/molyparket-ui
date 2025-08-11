@@ -1,10 +1,11 @@
-import { Pool } from "@/types/pool"
+import { getResolutionString, Pool } from "@/types/pool"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
 import { Button } from "./ui/button";
 import { useErc20 } from "web3-react-ui";
-import { Bell, User } from "lucide-react";
+import { Bell, User, Clock } from "lucide-react";
+import { useCallback } from "react";
 
 export default function PoolCard({ pool, chainId, tokenContract, fav, favClicked }: { pool: Pool, chainId: string, tokenContract: string,
         fav: boolean, favClicked: (poolId: string) => void
@@ -12,6 +13,14 @@ export default function PoolCard({ pool, chainId, tokenContract, fav, favClicked
     const { toHumanReadable } = useErc20(tokenContract, chainId);
     const volume = toHumanReadable(pool.collateral || "0");
     const percentage = 100n * BigInt(pool.totalSupplyYes) / (BigInt(pool.totalSupplyYes) + BigInt(pool.totalSupplyNo));
+    
+    // Check if pool is closed (current time > closing time)
+    const isPoolClosed = useCallback(() => {
+        const currentTime = Math.floor(Date.now() / 1000);
+        const closingTime = parseInt(pool.closingTime || "0");
+        return currentTime > closingTime;
+    }, [pool.closingTime]);
+    
     const handleToggleFavorite = (e: React.MouseEvent) => {
         e.preventDefault()
         e.stopPropagation()
@@ -39,18 +48,25 @@ export default function PoolCard({ pool, chainId, tokenContract, fav, favClicked
 
             <div className="mt-auto">
                 <div className="space-y-2 mb-4">
-                    <div className="flex space-x-2">
-                    <Button size="sm" className="flex-1 bg-green-500 hover:bg-green-600 text-white">
-                        Buy Yes ↗
-                    </Button>
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 border-red-500 text-red-500 hover:bg-red-500/10 bg-transparent"
-                    >
-                        Buy No ↘
-                    </Button>
-                    </div>
+                    {isPoolClosed() ? (
+                        <div className="flex items-center justify-center p-3 bg-muted rounded-lg border border-dashed border-muted-foreground/20">
+                            <Clock className="w-4 h-4 text-muted-foreground mr-2" />
+                            <span className="text-sm text-muted-foreground font-medium">Closed {getResolutionString(pool.resolution)}</span>
+                        </div>
+                    ) : (
+                        <div className="flex space-x-2">
+                        <Button size="sm" className="flex-1 bg-green-500 hover:bg-green-600 text-white">
+                            Buy Yes ↗
+                        </Button>
+                        <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 border-red-500 text-red-500 hover:bg-red-500/10 bg-transparent"
+                        >
+                            Buy No ↘
+                        </Button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="flex items-center justify-between text-xs text-muted-foreground">

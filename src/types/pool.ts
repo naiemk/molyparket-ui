@@ -26,6 +26,17 @@ export enum Resolution {
   INCONCLUSIVE = "3"
 }
 
+export function getResolutionString(resolution: Resolution | string) {
+  switch (resolution) {
+    case Resolution.YES:
+      return "Yes";
+    case Resolution.NO:
+      return "No";
+    case Resolution.INCONCLUSIVE:
+      return "Inconclusive";
+  }
+}
+
 export interface Pool {
   id: string;
   creator: string;
