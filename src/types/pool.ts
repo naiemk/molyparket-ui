@@ -63,4 +63,4 @@ export interface AppConfig {
   };
 }
 
-export const DEFAULT_CHAIN_ID = '11155111';
+export const DEFAULT_CHAIN_ID = '8453';
