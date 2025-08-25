@@ -1,10 +1,10 @@
 {
   "supportedChains": [
-    "42161",
+    "8453",
     "11155111"
   ],
   "betMarketContracts": {
-    "42161": "0x705C938bcCD3e3B6f287c4b206b3f465b93Add28",
+    "8453": "0x4cB89aaD3b17eae8742308F5DbBdC0DBFC2a7A21",
     "11155111": "0x705C938bcCD3e3B6f287c4b206b3f465b93Add28"
   }
 }

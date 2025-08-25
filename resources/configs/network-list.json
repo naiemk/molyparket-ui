@@ -12,7 +12,7 @@
   {
     "namespace": "evm",
     "id": "8453",
-    "rpcUrl": "https://mainnet.base.org",
+    "rpcUrl": "https://1rpc.io/base",
     "label": "Base",
     "token": "ETH",
     "icon": "https://base.org/favicon.ico",
