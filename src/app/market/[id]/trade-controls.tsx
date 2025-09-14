@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { ApprovableButton, useConnectWalletSimple, useContracts, useErc20 } from "web3-react-ui"
-import { ZeroAddress } from "ethers"
+import { ethers, ZeroAddress } from "ethers"
 import { Pool } from "@/types/pool"
 import { useSearchParams } from "next/navigation"
 import { MolyparketInfo } from "@/hooks/use-molyparket"
@@ -159,9 +159,8 @@ export function TradeControls({
     
     // Calculate ETH value needed for oracle gas (1M gas * estimated gas price)
     // Using a conservative estimate of 20 gwei for gas price
-    const gasPriceGwei = 2n; // 20 gwei as BigInt
-    const gasLimit = 400000n; // 1M gas for oracle callback as BigInt
-    const ethValue = gasLimit * gasPriceGwei * 10n ** 9n; // Keep as BigInt for value parameter
+    const gwei = 5000n; // 20k gas for oracle callback as BigInt
+    const ethValue = gwei * 10n ** 9n; // Keep as BigInt for value parameter
     
     // Call the smart contract to resolve the pool
     // The resolve function automatically determines the result
