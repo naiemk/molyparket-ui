@@ -19,6 +19,8 @@ export interface MolyparketInfo {
     pools: Pool[]; // in Reverse order
     keywordsSorted: string[];
     keywords: { [key: string]: number };
+    systemPrompt1: string;
+    systemPrompt2: string;
 }
 
 export async function getPool(chainId: string, contractAddress: string, id: string,
@@ -107,6 +109,8 @@ export function useMolyparket(lookBack: number = PAGE_SIZE) {
     const [pools, setPools] = useState<{ [key: string]: Pool }>({});
     const [molyparketInfo, setMolyparketInfo] = useState<MolyparketInfo>({} as MolyparketInfo);
     const [betSummaries, setBetSummaries] = useState<{ [key: string]: BetSummary }>({});
+    const [systemPrompt1, setSystemPrompt1] = useState<string>('');
+    const [systemPrompt2, setSystemPrompt2] = useState<string>('');
     useEffect(() => {
         if (!chainId || !contractAddress) {
             return;
@@ -118,6 +122,15 @@ export function useMolyparket(lookBack: number = PAGE_SIZE) {
             // poolCount cannot be cached
             const poolCount = await callMethod(chainId, contractAddress, 'function betIdsLength() view returns (uint256)', []);
             setPoolCount(poolCount);
+            
+            // Fetch system prompts with caching
+            const systemPrompt1Result = await GlobalCache.getAsync(`${chainId}-${contractAddress}-systemPrompt1`,
+                () => callMethod(chainId, contractAddress, 'function systemPrompt1() view returns (string)', []));
+            setSystemPrompt1(systemPrompt1Result);
+            
+            const systemPrompt2Result = await GlobalCache.getAsync(`${chainId}-${contractAddress}-systemPrompt2`,
+                () => callMethod(chainId, contractAddress, 'function systemPrompt2() view returns (string)', []));
+            setSystemPrompt2(systemPrompt2Result);
         }
         getGeneralInfo();
     }, [chainId, contractAddress, callMethod]);
@@ -223,8 +236,10 @@ export function useMolyparket(lookBack: number = PAGE_SIZE) {
             pools: Object.values(newPools).sort((a, b) => Number(b.id) - Number(a.id)),
             keywordsSorted: keywordsSorted,
             keywords: keywords,
+            systemPrompt1: systemPrompt1,
+            systemPrompt2: systemPrompt2,
         }));
-    }, [collateralTokenAddress, poolCount, pools, betSummaries]);
+    }, [collateralTokenAddress, poolCount, pools, betSummaries, systemPrompt1, systemPrompt2]);
 
     return { molyparketInfo, error };
 }

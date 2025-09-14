@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Share, Bell, HelpCircle, Copy } from "lucide-react"
+import { Share, Bell, HelpCircle, Copy, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -17,6 +17,7 @@ import { GLOBAL_CONFIG } from "@/types/token"
 import { TransactionModal } from "@/components/web3/transaction-modal"
 import { weiToDecimal } from "@/lib/utils"
 import { TradeControls } from "./trade-controls"
+import { getFullResolutionPrompt } from "@/lib/dtnResolver"
 
 interface MarketDetailClientProps {
   id: string
@@ -47,6 +48,7 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
 
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [transactionId, setTransactionId] = useState<string | null>(null);
+  const [showFullPrompt, setShowFullPrompt] = useState(false);
   console.log('POOL', pool, id, molyparketInfo?.collateralTokenAddress)
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     if (typeof window === "undefined") {
@@ -243,21 +245,53 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
             </Card>
 
             <div className="mt-6 space-y-6">
-              {/* Order Book, Context, Rules */}
+              {/* Order Book, Context, Resolution */}
               <Card>
                 <CardContent className="p-6">
-                  <h3 className="font-semibold text-foreground mb-4">Rules</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold text-foreground">Resolution Prompt</h3>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowFullPrompt(!showFullPrompt)}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            {showFullPrompt ? (
+                              <>
+                                <EyeOff className="w-4 h-4 mr-1" />
+                                Hide full prompt
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="w-4 h-4 mr-1" />
+                                Show full prompt
+                              </>
+                            )}
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Toggle between basic and full resolution prompt with system instructions</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                  
+                  <div className="text-sm text-muted-foreground mb-4">
                     <pre className="text-sm text-muted-foreground mb-4 whitespace-pre-wrap break-words">
-                      {pool.resolutionPrompt}
+                      {showFullPrompt ? getFullResolutionPrompt(
+                        pool.resolutionPrompt || '', 
+                        molyparketInfo?.systemPrompt1 || '', 
+                        molyparketInfo?.systemPrompt2 || ''
+                      ) : pool.resolutionPrompt}
                     </pre>
-                  </p>
-                  {/* <Button variant="link" size="sm" className="text-blue-600 p-0">
-                    Show more
-                  </Button> */}
+                  </div>
+                  
                   <div className="mt-4 pt-4 border-t">
                     <h4 className="font-semibold text-foreground mb-2">AI Model</h4>
-                    <p className="text-sm text-muted-foreground font-mono">system, openai-gpt-o3-simple-text</p>
+                    <p className="text-sm text-muted-foreground font-mono">system, google-gemini-1_5-pro</p>
                   </div>
                 </CardContent>
               </Card>
