@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { Share, Bell, HelpCircle, Copy, Eye, EyeOff } from "lucide-react"
+import { formatDistanceToNow } from "date-fns"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -33,7 +34,7 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
   const [pool, setPool] = useState<Pool>({} as Pool);
   const { molyparketInfo } = useMolyparket();
   const [copied, setCopied] = useState(false)
-  const { toHumanReadable, getBalance } = useErc20(molyparketInfo?.collateralTokenAddress || "", chainId!);
+  const { toHumanReadable, getBalance, tokenData } = useErc20(molyparketInfo?.collateralTokenAddress || "", chainId!);
   const [yesPrice, setYesPrice] = useState<string>("");
   const [noPrice, setNoPrice] = useState<string>("");
   const [balance, setBalance] = useState<string>("");
@@ -175,8 +176,8 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                 <div>
                   <h1 className="text-2xl font-bold text-foreground">{pool.title}</h1>
                   <div className="flex items-center space-x-4 text-sm text-muted-foreground mt-1">
-                    <span>{volume}</span>
-                    <span>📅 {pool.closingTime}</span>
+                    <span>{volume} {tokenData?.symbol || ''}</span>
+                    <span>📅 {pool.closingTime ? formatDistanceToNow(new Date(parseInt(pool.closingTime) * 1000), { addSuffix: true }) : 'N/A'}</span>
                   </div>
                 </div>
               </div>
@@ -289,7 +290,7 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
                   
                   <div className="mt-4 pt-4 border-t">
                     <h4 className="font-semibold text-foreground mb-2">AI Model</h4>
-                    <p className="text-sm text-muted-foreground font-mono">system, google-gemini-1_5-pro</p>
+                    <p className="text-sm text-muted-foreground font-mono">system, google-gemini-2_5-pro</p>
                   </div>
                 </CardContent>
               </Card>
