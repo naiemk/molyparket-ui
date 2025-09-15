@@ -15,7 +15,6 @@ export function UnclaimedBalance({contractAddress, onTransactionSubmitted}: {con
     tokenAddress: null
   })
   const { callMethod, execute } = useContracts();
-  console.log('unclaimedBalance', unclaimedBalance)
   useEffect(() => {
     const getUnclaimedBalance = async () => {
       if (address && chainId) {
@@ -67,7 +66,6 @@ export function UnclaimedBalance({contractAddress, onTransactionSubmitted}: {con
     return <></>
   }
 
-  console.log('rendering unclaimedBalance', unclaimedBalance)
   return (
     <>
       <Alert>

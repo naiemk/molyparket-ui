@@ -49,7 +49,6 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [transactionId, setTransactionId] = useState<string | null>(null);
   const [showFullPrompt, setShowFullPrompt] = useState(false);
-  console.log('POOL', pool, id, molyparketInfo?.collateralTokenAddress)
   const [favorites, setFavorites] = useState<Set<string>>(() => {
     if (typeof window === "undefined") {
       return new Set()
@@ -76,25 +75,24 @@ export function MarketDetailClient({ id }: MarketDetailClientProps) {
   useEffect(() => {
     if (!chainId || !contractAddress) return;
     const loadYesPrice = async () => {
-      const yesPrice = await callMethod(chainId, contractAddress, "function costToBuyYes(uint256,uint256) view returns (uint256)", [id, BigInt(10 ** 18)])
+      const yesPrice = await callMethod(chainId, contractAddress, "function costToBuyYes(uint256,uint256) view returns (uint256)", [id, BigInt(10 ** 6)])
       // Convert wei to human-readable decimal price
-      const humanReadablePrice = weiToDecimal(yesPrice)
-      console.log('yesPrice', yesPrice, humanReadablePrice, id)
+      const humanReadablePrice = toHumanReadable(yesPrice)!
       setYesPrice(humanReadablePrice)
     } 
     loadYesPrice()
-  }, [chainId, contractAddress, callMethod, id])
+  }, [chainId, contractAddress, callMethod, id, toHumanReadable])
 
   useEffect(() => {
     if (!chainId || !contractAddress) return;
     const loadNoPrice = async () => {
-      const noPrice = await callMethod(chainId, contractAddress, "function costToBuyNo(uint256,uint256) view returns (uint256)", [id, 1n * BigInt(10 ** 18)])
+      const noPrice = await callMethod(chainId, contractAddress, "function costToBuyNo(uint256,uint256) view returns (uint256)", [id, 1n * BigInt(10 ** 6)])
       // Convert wei to human-readable decimal price
-      const humanReadablePrice = weiToDecimal(noPrice)
+      const humanReadablePrice = toHumanReadable(noPrice)!
       setNoPrice(humanReadablePrice)
     } 
     loadNoPrice()
-  }, [chainId, contractAddress, callMethod, id])
+  }, [chainId, contractAddress, callMethod, id, toHumanReadable])
 
   useEffect(() => {
     if (!chainId || !contractAddress || !address) return;

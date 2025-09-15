@@ -21,8 +21,6 @@ interface NostrCommentsProps {
 
 export function NostrComments({ noteUrl }: NostrCommentsProps) {
   
-  console.log('NostrComments received noteUrl:', noteUrl, 'type:', typeof noteUrl)
-  
   // Detect current theme
   const [currentTheme, setCurrentTheme] = useState<'light' | 'dark'>('light')
   

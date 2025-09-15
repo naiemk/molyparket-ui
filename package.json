@@ -32,8 +32,8 @@
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.6.0",
     "tailwindcss-animate": "^1.0.7",
-    "tw-animate-css": "^1.3.6",
-    "web3-react-ui": "github:naiemk/web3-react-ui"
+    "web3-react-ui": "github:naiemk/web3-react-ui",
+    "tw-animate-css": "^1.3.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

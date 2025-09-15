@@ -10,7 +10,6 @@ import { Pool } from "@/types/pool"
 import { useSearchParams } from "next/navigation"
 import { MolyparketInfo } from "@/hooks/use-molyparket"
 import { Loader2, Clock, CheckCircle, XCircle, MinusCircle } from "lucide-react"
-import { weiToDecimal } from "@/lib/utils"
 
 interface TradeControlsProps {
   pool: Pool
@@ -45,11 +44,9 @@ export function TradeControls({
   const [pending, setPending] = useState(false)
   const [withdrawableAmount, setWithdrawableAmount] = useState<string>("")
   const [isLoadingWithdrawable, setIsLoadingWithdrawable] = useState(false)
-  const { toMachineReadable } = useErc20(molyparketInfo?.collateralTokenAddress || "", chainId!);
+  const { toMachineReadable, toHumanReadable } = useErc20(molyparketInfo?.collateralTokenAddress || "", chainId!);
   const searchParams = useSearchParams()
   const referrer = searchParams.get('r') || '';
-
-  console.log('ERROR', error)
 
   // Check if pool is closed (current time > closing time)
   const isPoolClosed = useCallback(() => {
@@ -87,7 +84,7 @@ export function TradeControls({
           "function withdrawableAmount(uint256,address) view returns (uint256)", 
           [pool.id, address]
         );
-        setWithdrawableAmount(weiToDecimal(withdrawable || "0"));
+        setWithdrawableAmount(toHumanReadable(withdrawable || "0") || "0");
       } catch (e) {
         console.error('Error loading withdrawable amount:', e);
         setWithdrawableAmount("0");
@@ -97,7 +94,7 @@ export function TradeControls({
     };
 
     loadWithdrawableAmount();
-  }, [pool.id, address, chainId, contractAddress, callMethod, isPoolClosed]);
+  }, [pool.id, address, chainId, contractAddress, callMethod, isPoolClosed, toHumanReadable]);
 
   const getSelectedOutcomeBalance = () => {
     return selectedOutcome === "Yes" ? yesBalance : noBalance;

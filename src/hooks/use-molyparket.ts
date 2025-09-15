@@ -21,11 +21,12 @@ export interface MolyparketInfo {
     keywords: { [key: string]: number };
     systemPrompt1: string;
     systemPrompt2: string;
+    betResolverContractAddress: string;
 }
 
 export async function getPool(chainId: string, contractAddress: string, id: string,
     callMethod: (chainId: string, contractAddress: string, method: string, params: unknown[]) => Promise<unknown>) {
-    console.log('pools', chainId, contractAddress, id, callMethod)
+        console.log('CHAIN ID', chainId)
     const res = await callMethod(chainId, contractAddress,
         /*
             struct Pool {
@@ -66,11 +67,9 @@ export async function getPool(chainId: string, contractAddress: string, id: stri
                 string,
                 string)`,
         [id]) as string[];
-    console.log('getPool.res', res, id)
     if (!res) {
         throw new Error(`Pool ${id} not found`)
     }
-    console.log('getPool.res', res, id)
     const poolObj = {
         id: res[0].toString(),
         creator: res[1].toString(),
@@ -89,7 +88,6 @@ export async function getPool(chainId: string, contractAddress: string, id: stri
         tags: res[14],
         logoUrl: res[15],
     } as Pool;
-    console.log('GETPOOL.RES', poolObj, id)
     return poolObj;
 }
 
@@ -111,6 +109,7 @@ export function useMolyparket(lookBack: number = PAGE_SIZE) {
     const [betSummaries, setBetSummaries] = useState<{ [key: string]: BetSummary }>({});
     const [systemPrompt1, setSystemPrompt1] = useState<string>('');
     const [systemPrompt2, setSystemPrompt2] = useState<string>('');
+    const [betResolverContractAddress, setBetResolverContractAddress] = useState<string>('');
     useEffect(() => {
         if (!chainId || !contractAddress) {
             return;
@@ -122,18 +121,33 @@ export function useMolyparket(lookBack: number = PAGE_SIZE) {
             // poolCount cannot be cached
             const poolCount = await callMethod(chainId, contractAddress, 'function betIdsLength() view returns (uint256)', []);
             setPoolCount(poolCount);
-            
-            // Fetch system prompts with caching
-            const systemPrompt1Result = await GlobalCache.getAsync(`${chainId}-${contractAddress}-systemPrompt1`,
-                () => callMethod(chainId, contractAddress, 'function systemPrompt1() view returns (string)', []));
-            setSystemPrompt1(systemPrompt1Result);
-            
-            const systemPrompt2Result = await GlobalCache.getAsync(`${chainId}-${contractAddress}-systemPrompt2`,
-                () => callMethod(chainId, contractAddress, 'function systemPrompt2() view returns (string)', []));
-            setSystemPrompt2(systemPrompt2Result);
+
+            const betResolverContractAddress = await callMethod(chainId, contractAddress, 'function dtnResolver() view returns (address)', []);
+            console.log('+BET RESOLVER CONTRACT ADDRESS', betResolverContractAddress)
+            setBetResolverContractAddress(betResolverContractAddress);
         }
         getGeneralInfo();
     }, [chainId, contractAddress, callMethod]);
+
+    useEffect(() => {
+        console.log('BET RESOLVER CONTRACT ADDRESS', betResolverContractAddress)
+        if (!chainId || !betResolverContractAddress) {
+            return;
+        }
+        const getPrompts = async () => {
+            console.log('Getting prompts', chainId, betResolverContractAddress)
+            // Fetch system prompts with caching
+            const systemPrompt1Result = await GlobalCache.getAsync(`${chainId}-${betResolverContractAddress}-systemPrompt1`,
+                () => callMethod(chainId, betResolverContractAddress, 'function systemPrompt1() view returns (string)', []));
+            setSystemPrompt1(systemPrompt1Result);
+            
+            const systemPrompt2Result = await GlobalCache.getAsync(`${chainId}-${betResolverContractAddress}-systemPrompt2`,
+                () => callMethod(chainId, betResolverContractAddress, 'function systemPrompt2() view returns (string)', []));
+            setSystemPrompt2(systemPrompt2Result);
+            console.log('Got prompts', systemPrompt1Result, systemPrompt2Result)
+        }
+        getPrompts();
+    }, [chainId, betResolverContractAddress, callMethod]);
 
     // Load recent pools until lookBack is reached. Use cache to avoid duplicate calls.
     useEffect(() => {
@@ -142,19 +156,15 @@ export function useMolyparket(lookBack: number = PAGE_SIZE) {
         }
         const getPools = async (startIndex: number, endIndex: number) => {
             try {
-                    console.log('getPools', startIndex, endIndex)
                     for (let i = startIndex; i <= endIndex; i++) {
-                        console.log('getPools.for', i)
                         const poolId = await GlobalCache.getAsync(`${chainId}-${contractAddress}-betId-${i}`, 
                                 async () => (await callMethod(
                                     chainId, contractAddress, 'function betIds(uint256 index) view returns (uint256)', [i])).toString());
-                        console.log('getPools.poolId', i, poolId)
                         if (!poolId) {
                             throw new Error(`Bet ID ${i} not found`)
                         }
                         const pool = await GlobalCache.getAsync(`${chainId}-${contractAddress}-pool-${poolId}`, async () =>
                             await getPool(chainId, contractAddress, poolId.toString(), callMethod));
-                        console.log('GOT pool', i, pool)
                         setPools(prevPools => ({ ...prevPools, [poolId]: pool }));
                     }
             } catch (error) {
@@ -175,7 +185,6 @@ export function useMolyparket(lookBack: number = PAGE_SIZE) {
         }
         const getBetSummaries = async () => {
             const betIds = Object.keys(pools).map(Number);
-            console.log('betIds', betIds, pools)
             if (betIds.length === 0) {
                 return;
             }
@@ -187,7 +196,9 @@ export function useMolyparket(lookBack: number = PAGE_SIZE) {
                     uint8[] memory _resolutions
                 )`,
                 [betIds]);
-            console.log('betSummaries', betSummaries, betIds)
+            if (!betSummaries) {
+                return;
+            }
             const newSummaries: { [key: string]: BetSummary } = {};
             const yesSupply = betSummaries[0];
             const noSupply = betSummaries[1];
@@ -228,7 +239,6 @@ export function useMolyparket(lookBack: number = PAGE_SIZE) {
             return acc;
         }, {} as { [key: string]: number });
         const keywordsSorted = Object.keys(keywords).sort((a, b) => keywords[b] - keywords[a]);
-        console.log('Updating MOLY PARKET',  collateralTokenAddress, poolCount, pools, betSummaries)
         setMolyparketInfo(prevInfo => ({
             ...(prevInfo),
             collateralTokenAddress: collateralTokenAddress,
