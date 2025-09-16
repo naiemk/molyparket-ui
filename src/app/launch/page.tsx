@@ -19,7 +19,7 @@ import { TransactionModal } from "@/components/web3/transaction-modal"
 
 const MAX_TITLE_LENGTH = 120
 const MAX_PROMPT_LENGTH = 2048
-const MIN_COLLATERAL = 20
+const MIN_COLLATERAL = 0.5
 
 export default function LaunchBetPage() {
   const { error, execute } = useContracts()
